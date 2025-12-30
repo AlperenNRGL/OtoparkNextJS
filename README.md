@@ -115,3 +115,4 @@ Plaka ile filtreleme
 - Eski `index.js` dosyası artık kullanılmamaktadır (yedek olarak saklanabilir)
 - Supabase'de tablo yapısını ihtiyacınıza göre özelleştirebilirsiniz
 
+# OtoparkNextJS
