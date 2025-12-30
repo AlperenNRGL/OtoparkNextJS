@@ -116,3 +116,4 @@ Plaka ile filtreleme
 - Supabase'de tablo yapısını ihtiyacınıza göre özelleştirebilirsiniz
 
 # OtoparkNextJS
+# OtoparkNextJS
