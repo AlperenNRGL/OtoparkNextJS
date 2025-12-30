@@ -1,0 +1,87 @@
+const express = require("express");
+const mongoose = require("mongoose");
+
+const app = express();
+
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.set("view engine", "ejs");
+
+const path = require("path");
+// const userRoutes = require("./routes/user");
+
+
+
+//! Sonrası
+const cors = require('cors');
+const dotenv = require('dotenv');
+dotenv.config();
+
+
+app.use(cors());
+app.use(express.json());
+
+
+
+app.use("/libs", express.static(path.join(__dirname, "node_modules")));
+
+// app.use(userRoutes);
+
+
+
+// const express = require("express");
+// const router = express.Router();
+
+// const mongoose = require("mongoose");
+
+
+
+
+
+const veri_schema = mongoose.model("veri_schema", mongoose.Schema({}, { strict: false }));
+
+
+
+app.post('/veri-ekle', async (req, res) => {
+
+    veri_schema.insertMany(req.body);
+
+    res.send("newProduct");
+});
+
+
+
+app.post('/veri-getir', async (req, res) => {
+
+    const veri = await veri_schema.find({plaka : req.body.plaka})
+
+    res.send(veri);
+});
+
+app.get('/veri-getir', async (req, res) => {
+
+    const veri = await veri_schema.find()
+
+    res.send(veri);
+});
+
+
+
+
+
+
+(async () => {
+    try {
+        await mongoose.connect(`mongodb+srv://Alperen:nirnoh-juxtIn-0paxfu@cluster0.yszp7pt.mongodb.net/?appName=Cluster0`);
+        console.log("mongodb bağlantısı kuruldu.");
+    }
+    catch (err) {
+        console.log(err);
+    }
+})();
+
+app.listen(process.env.PORT || 3000, function () {
+    console.log("listening on port 3000");
+});
