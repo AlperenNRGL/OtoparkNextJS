@@ -29,80 +29,38 @@ export async function POST(request) {
       )
     }
 
-    // Bugünün başlangıcı ve sonu
-    const arananGun = new Date()
-    const gunBaslangici = new Date(arananGun.setHours(0, 0, 0, 0))
-    const gunSonu = new Date(arananGun.setHours(23, 59, 59, 999))
+    // Bugünün başlangıcı ve sonu (timestamp olarak)
+    const bugun = new Date()
+    const gunBaslangici = new Date(bugun.setHours(0, 0, 0, 0))
+    const gunSonu = new Date(bugun.setHours(23, 59, 59, 999))
+    const gunBaslangiciTimestamp = gunBaslangici.getTime()
+    const gunSonuTimestamp = gunSonu.getTime()
 
     const supabase = createSupabaseAdmin()
 
-    // Supabase'de JSONB içinden plaka ve date ile filtreleme
-    // JSONB içindeki date alanını timestamp'e çevirip karşılaştır
+    // Normal kolonlar ile filtreleme
     let query = supabase
       .from('veri')
-      .select('id, data, created_at, updated_at')
-      .eq('data->>plaka', plaka) // Plaka eşleşmesi
-      .gte('data->>date', gunBaslangici.toISOString()) // Tarih >= bugün başlangıcı
-      .lte('data->>date', gunSonu.toISOString()) // Tarih <= bugün sonu
+      .select('id, date, plaka, islem, tip, giris, price, created_at, updated_at')
+      .eq('plaka', plaka) // Plaka eşleşmesi
+      .gte('date', gunBaslangiciTimestamp) // Tarih >= bugün başlangıcı
+      .lte('date', gunSonuTimestamp) // Tarih <= bugün sonu
       .order('created_at', { ascending: false })
 
     const { data, error } = await query
 
     if (error) {
       console.error('Supabase error:', error)
-      
-      // Eğer JSONB sorgulama çalışmazsa, tüm verileri çekip JavaScript'te filtrele
-      const { data: allData, error: allError } = await supabase
-        .from('veri')
-        .select('id, data, created_at, updated_at')
-        .order('created_at', { ascending: false })
-        .limit(10000) // Yeterince büyük limit
-
-      if (allError) {
-        return NextResponse.json(
-          { error: allError.message },
-          { 
-            status: 400,
-            headers: corsHeaders
-          }
-        )
-      }
-
-      // JavaScript'te filtrele
-      const filteredData = allData
-        .map(item => ({
-          id: item.id,
-          ...item.data,
-          created_at: item.created_at,
-          updated_at: item.updated_at
-        }))
-        .filter(item => {
-          // Plaka kontrolü
-          if (item.plaka !== plaka) return false
-          
-          // Tarih kontrolü
-          if (!item.date) return false
-          const itemDate = new Date(item.date)
-          return itemDate >= gunBaslangici && itemDate <= gunSonu
-        })
-
-      return NextResponse.json(filteredData, {
-        headers: {
-          ...corsHeaders,
-          'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60'
+      return NextResponse.json(
+        { error: error.message },
+        { 
+          status: 400,
+          headers: corsHeaders
         }
-      })
+      )
     }
 
-    // Response'u MongoDB formatına benzet (data içindeki veriyi dışarı çıkar)
-    const formattedData = data.map(item => ({
-      id: item.id,
-      ...item.data,
-      created_at: item.created_at,
-      updated_at: item.updated_at
-    }))
-
-    return NextResponse.json(formattedData, {
+    return NextResponse.json(data, {
       headers: {
         ...corsHeaders,
         'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60'

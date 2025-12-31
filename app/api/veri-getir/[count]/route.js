@@ -36,7 +36,7 @@ export async function GET(request, { params }) {
     // Belirtilen sayıda veri getir - created_at'e göre tersten (en yeni önce)
     const { data, error } = await supabase
       .from('veri')
-      .select('id, data, created_at, updated_at')
+      .select('id, date, plaka, islem, tip, giris, price, created_at, updated_at')
       .order('created_at', { ascending: false })
       .limit(dataCount)
 
@@ -51,15 +51,7 @@ export async function GET(request, { params }) {
       )
     }
 
-    // Response'u MongoDB formatına benzet (data içindeki veriyi dışarı çıkar)
-    const formattedData = data.map(item => ({
-      id: item.id,
-      ...item.data,
-      created_at: item.created_at,
-      updated_at: item.updated_at
-    }))
-
-    return NextResponse.json(formattedData, {
+    return NextResponse.json(data, {
       headers: {
         ...corsHeaders,
         'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=60'

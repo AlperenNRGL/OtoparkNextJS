@@ -61,89 +61,24 @@ export async function POST(request) {
     let bugunIslemler = []
     
     try {
-      // Önce JSONB sorgusu ile deneyelim
-      let { data: tumVeriler, error: veriError } = await supabase
+      // Normal kolonlar ile sorgu
+      const { data: tumVeriler, error: veriError } = await supabase
         .from('veri')
-        .select('id, data, created_at, updated_at')
+        .select('id, date, plaka, islem, tip, giris, price, created_at, updated_at')
+        .eq('plaka', plaka)
+        .gte('date', gunBaslangiciTimestamp)
+        .lte('date', gunSonuTimestamp)
+        .in('islem', ['cıkıs', 'veresiye'])
         .order('created_at', { ascending: false })
-        .limit(5000)
+        .limit(1000)
 
-      // Eğer JSONB sorgusu çalışmazsa, tüm verileri çekip JavaScript'te filtrele
       if (veriError) {
-        console.log('JSONB sorgusu hatası, tüm veriler çekiliyor:', veriError.message)
-        const { data: allData, error: allError } = await supabase
-          .from('veri')
-          .select('id, data, created_at, updated_at')
-          .order('created_at', { ascending: false })
-          .limit(5000)
-        
-        if (allError) {
-          console.error('Veri çekme hatası:', allError)
-          tumVeriler = []
-        } else {
-          tumVeriler = allData
-        }
-      }
-
-      if (tumVeriler && tumVeriler.length > 0) {
-        // JavaScript'te bugünkü işlemleri filtrele
+        console.error('Veri çekme hatası:', veriError)
+      } else if (tumVeriler && tumVeriler.length > 0) {
         bugunIslemler = tumVeriler
-          .map(item => {
-            try {
-              return {
-                id: item.id,
-                ...(item.data || {}),
-                created_at: item.created_at,
-                updated_at: item.updated_at
-              }
-            } catch (e) {
-              console.error('Veri parse hatası:', e)
-              return null
-            }
-          })
-          .filter(item => {
-            if (!item) return false
-            
-            // Plaka kontrolü
-            if (item.plaka !== plaka) return false
-            
-            // İşlem kontrolü - sadece "cıkıs" veya "veresiye" olanlar
-            if (!item.islem) return false
-            const islem = String(item.islem).toLowerCase().trim()
-            if (islem !== 'cıkıs' && islem !== 'veresiye') {
-              return false
-            }
-            
-            // Tarih kontrolü - date alanı timestamp ise
-            let itemDate = null
-            
-            if (item.date) {
-              // Date alanı string, number veya Date objesi olabilir
-              if (typeof item.date === 'number') {
-                itemDate = item.date
-              } else if (typeof item.date === 'string') {
-                itemDate = new Date(item.date).getTime()
-              } else {
-                itemDate = item.date.getTime ? item.date.getTime() : null
-              }
-            }
-            
-            // Eğer date yoksa veya geçersizse created_at'e bak
-            if (!itemDate || isNaN(itemDate)) {
-              if (item.created_at) {
-                itemDate = new Date(item.created_at).getTime()
-              } else {
-                return false
-              }
-            }
-            
-            // Bugünkü tarih kontrolü
-            return itemDate >= gunBaslangiciTimestamp && itemDate <= gunSonuTimestamp
-          })
-        
         console.log(`Bugünkü işlemler bulundu: ${bugunIslemler.length} adet`)
       } else {
-        console.log('Veri tablosunda kayıt bulunamadı')
+        console.log('Bugünkü işlem bulunamadı')
       }
     } catch (error) {
       console.error('Bugünkü işlemler kontrolü hatası:', error)

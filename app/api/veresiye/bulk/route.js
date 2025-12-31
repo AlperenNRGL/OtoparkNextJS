@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 // CORS headers helper
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
@@ -13,15 +13,15 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders })
 }
 
-// DELETE request - Plakaya ait tüm veresiyeleri silme
-export async function DELETE(request) {
+// POST request - Toplu veresiye ekleme
+export async function POST(request) {
   try {
     const body = await request.json()
-    const { plaka } = body
-
-    if (!plaka) {
+    
+    // Body bir array olmalı
+    if (!Array.isArray(body) || body.length === 0) {
       return NextResponse.json(
-        { error: 'Plaka parametresi gerekli' },
+        { error: 'Body bir array olmalı ve en az bir veresiye içermelidir' },
         { 
           status: 400,
           headers: corsHeaders
@@ -31,28 +31,26 @@ export async function DELETE(request) {
 
     const supabase = createSupabaseAdmin()
 
-    // Önce silinecek verileri getir (response için)
-    const { data: dataToDelete, error: selectError } = await supabase
-      .from('veresiye')
-      .select('*')
-      .eq('plaka', plaka)
+    // Verileri hazırla ve validasyon yap
+    const veresiyeDataList = body.map((item, index) => {
+      const { plaka, date, price, not } = item
 
-    if (selectError) {
-      console.error('Supabase select error:', selectError)
-      return NextResponse.json(
-        { error: selectError.message },
-        { 
-          status: 400,
-          headers: corsHeaders
-        }
-      )
-    }
+      // Zorunlu alanları kontrol et
+      if (!plaka || !date || !price) {
+        throw new Error(`Index ${index}: Plaka, date ve price alanları zorunludur`)
+      }
 
-    // Verileri sil
+      return {
+        plaka: plaka,
+        date: date,
+        price: price,
+        not: not || null
+      }
+    })
+
     const { data, error } = await supabase
       .from('veresiye')
-      .delete()
-      .eq('plaka', plaka)
+      .insert(veresiyeDataList)
       .select()
 
     if (error) {
@@ -68,8 +66,8 @@ export async function DELETE(request) {
 
     return NextResponse.json(
       { 
-        message: `${data.length} adet veresiye silindi`, 
-        deletedCount: data.length,
+        message: `${data.length} adet veresiye eklendi`, 
+        count: data.length,
         data: data 
       },
       { headers: corsHeaders }
@@ -77,7 +75,7 @@ export async function DELETE(request) {
   } catch (error) {
     console.error('Server error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Internal server error' },
       { 
         status: 500,
         headers: corsHeaders
@@ -85,6 +83,4 @@ export async function DELETE(request) {
     )
   }
 }
-
-
 
