@@ -78,3 +78,4 @@ Deploy sonrası test edin:
 
 Projeniz artık canlıda!
 
+
