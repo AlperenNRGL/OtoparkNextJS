@@ -17,3 +17,4 @@ END;
 -- Veya eğer mevcut verileri korumak istemiyorsanız (tüm giris verileri silinir):
 -- ALTER TABLE veri ALTER COLUMN giris TYPE BIGINT USING NULL;
 
+
