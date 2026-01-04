@@ -51,14 +51,14 @@ export async function POST(request) {
 
     if (error) {
       console.error('Supabase error:', error)
-      return NextResponse.json(
+        return NextResponse.json(
         { error: error.message },
-        { 
-          status: 400,
-          headers: corsHeaders
-        }
-      )
-    }
+          { 
+            status: 400,
+            headers: corsHeaders
+          }
+        )
+      }
 
     return NextResponse.json(data, {
       headers: {
